@@ -70,7 +70,9 @@ class LenhSanXuatRepository
 
         $dStmt = $this->db->prepare($detailSql);
         $dStmt->execute(['maKeHoach' => $maKeHoach]);
-        $plan['chiTiet'] = $dStmt->fetchAll(PDO::FETCH_ASSOC);
+        $details = $dStmt->fetchAll(PDO::FETCH_ASSOC);
+        $plan['chiTiet'] = $details;
+        $plan['items'] = $details;
 
         return $plan;
     }

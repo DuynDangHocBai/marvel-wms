@@ -316,7 +316,7 @@ class PhanBoRepository
         array $allocations,
         string $maNhanVien,
         string $ghiChu = '',
-        ?int $maTaiKhoan = null
+        ?string $maTaiKhoan = null
     ): string {
         $wasInTransaction = $this->db->inTransaction();
         if (!$wasInTransaction) {
@@ -494,7 +494,7 @@ class PhanBoRepository
     /**
      * Ghi nhật ký hệ thống
      */
-    private function logActivity(?int $maTaiKhoan, string $hanhDong, string $moTa, ?array $cu = null, ?array $moi = null): void
+    private function logActivity(?string $maTaiKhoan, string $hanhDong, string $moTa, ?array $cu = null, ?array $moi = null): void
     {
         try {
             $sql = "INSERT INTO nhat_ky_he_thong 

@@ -200,7 +200,7 @@ class DeNghiMuaRepository
     /**
      * Tạo đề nghị mua NVL trong transaction
      */
-    public function createProposal(array $formData, string $maNhanVien, ?int $maTaiKhoan = null): string
+    public function createProposal(array $formData, string $maNhanVien, ?string $maTaiKhoan = null): string
     {
         $wasInTransaction = $this->db->inTransaction();
         if (!$wasInTransaction) {
@@ -297,7 +297,7 @@ class DeNghiMuaRepository
     /**
      * Hủy đề nghị mua khi trạng thái còn CHO_DUYET
      */
-    public function cancelProposal(string $maDeNghi, string $maNhanVien, string $lyDoHuy = '', ?int $maTaiKhoan = null): bool
+    public function cancelProposal(string $maDeNghi, string $maNhanVien, string $lyDoHuy = '', ?string $maTaiKhoan = null): bool
     {
         $sql = "UPDATE de_nghi_mua_nvl 
                 SET trangThai = 'DA_HUY',
@@ -328,7 +328,7 @@ class DeNghiMuaRepository
     /**
      * Ghi nhật ký hệ thống
      */
-    private function logActivity(?int $maTaiKhoan, string $hanhDong, string $moTa, ?array $cu = null, ?array $moi = null): void
+    private function logActivity(?string $maTaiKhoan, string $hanhDong, string $moTa, ?array $cu = null, ?array $moi = null): void
     {
         try {
             $sql = "INSERT INTO nhat_ky_he_thong 

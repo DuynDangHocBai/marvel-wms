@@ -12,8 +12,13 @@
 use App\Core\Csrf;
 
 $step = $currentStep ?? 1;
+$hasPlanItems = !empty($planDetail['items']) && is_array($planDetail['items']);
+
 if (!empty($bomResult)) {
     $step = 3;
+} elseif ($step > 1 && !$hasPlanItems) {
+    // Không cho mở bước phân bổ khi chưa tải được chi tiết kế hoạch.
+    $step = 1;
 }
 ?>
 
@@ -67,7 +72,7 @@ if (!empty($bomResult)) {
         </div>
     </div>
 
-    <form id="orderForm" method="POST" action="?route=lenh-san-xuat/create">
+    <form id="orderForm" method="POST" action="?route=lenh-san-xuat/create" data-plan-ready="<?= $hasPlanItems ? '1' : '0' ?>">
         <?= Csrf::field() ?>
         <input type="hidden" name="form_action" id="formActionInput" value="check_bom">
 
@@ -83,14 +88,26 @@ if (!empty($bomResult)) {
                 
                 <div class="form-group mb-4" style="max-width: 500px;">
                     <label class="form-label font-weight-bold">Chọn kế hoạch sản xuất <span class="text-danger">*</span></label>
-                    <select name="maKeHoach" id="planSelect" class="input" onchange="onPlanSelectChange(this.value)">
-                        <option value="">-- Chọn kế hoạch sản xuất --</option>
-                        <?php foreach ($approvedPlans as $p): ?>
-                            <option value="<?= htmlspecialchars($p['maKeHoach']) ?>" <?= $selectedPlanId === $p['maKeHoach'] ? 'selected' : '' ?>>
-                                <?= htmlspecialchars($p['maKeHoach']) ?> - <?= htmlspecialchars($p['tenKeHoach']) ?> (Tháng <?= date('m/Y', strtotime($p['ngayBatDau'])) ?>)
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
+               <select name="maKeHoach" id="planSelect" class="input"
+        onchange="onPlanSelectChange(this.value)">
+    <option value="">-- Chọn kế hoạch sản xuất --</option>
+
+    <?php foreach ($approvedPlans as $p): ?>
+        <option
+            value="<?= htmlspecialchars((string)($p['maKeHoach'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+            <?= ($selectedPlanId ?? '') === ($p['maKeHoach'] ?? '') ? 'selected' : '' ?>
+        >
+            <?= htmlspecialchars((string)($p['maKeHoach'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
+            -
+            <?= htmlspecialchars((string)($p['tenKeHoach'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
+            (Tháng
+            <?= !empty($p['ngayBatDau'])
+                ? date('m/Y', strtotime($p['ngayBatDau']))
+                : ''
+            ?>)
+        </option>
+    <?php endforeach; ?>
+</select>
                 </div>
 
                 <?php if ($planDetail): ?>
@@ -151,123 +168,270 @@ if (!empty($bomResult)) {
             </div>
         </div>
 
-        <!-- BƯỚC 2: CHỌN XƯỞNG & PHÂN BỔ SỐ LƯỢNG SẢN XUẤT -->
-        <div class="card mb-4 wizard-step-panel" id="panelStep2" style="<?= $step !== 2 ? 'display: none;' : '' ?>">
-            <div class="card-head">
-                <div class="card-head-title">
-                    <i class="bi bi-gear-wide-connected"></i> Bước 2: Chọn Xưởng sản xuất & Phân bổ số lượng
-                </div>
+      
+        
+<!-- BƯỚC 2: CHỌN XƯỞNG & PHÂN BỔ SỐ LƯỢNG SẢN XUẤT -->
+<div class="card mb-4 wizard-step-panel" id="panelStep2"
+     style="<?= ($step ?? 1) !== 2 ? 'display: none;' : '' ?>">
+
+    <div class="card-head">
+        <div class="card-head-title">
+            <i class="bi bi-gear-wide-connected"></i>
+            Bước 2: Chọn Xưởng sản xuất & Phân bổ số lượng
+        </div>
+    </div>
+
+    <div class="card-body">
+        <div class="form-grid grid-3 mb-4">
+
+            <!-- Chọn xưởng sản xuất -->
+            <div class="form-group">
+                <label class="form-label font-weight-bold">
+                    Xưởng sản xuất nhận lệnh
+                    <span class="text-danger">*</span>
+                </label>
+
+                <select name="maXuong" id="xuongSelect" class="input" required>
+                    <option value="">-- Chọn xưởng sản xuất --</option>
+
+                    <?php foreach (($xuongList ?? []) as $x): ?>
+                        <?php
+                            $maXuong = (string)($x['maXuong'] ?? '');
+                            $tenXuong = (string)($x['tenXuong'] ?? '');
+                            $tenKhoNVL = (string)($x['tenKhoNVL'] ?? '');
+                            $selectedXuong = (string)($formData['maXuong'] ?? '');
+                        ?>
+
+                        <option
+                            value="<?= htmlspecialchars($maXuong, ENT_QUOTES, 'UTF-8') ?>"
+                            <?= $selectedXuong === $maXuong && $maXuong !== '' ? 'selected' : '' ?>
+                        >
+                            <?= htmlspecialchars($tenXuong, ENT_QUOTES, 'UTF-8') ?>
+                            (Kho NVL phụ trách:
+                            <?= htmlspecialchars($tenKhoNVL, ENT_QUOTES, 'UTF-8') ?>)
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+
+                <small class="text-muted mt-1 d-block">
+                    Có thể chia 1 kế hoạch cho nhiều xưởng khác nhau.
+                </small>
             </div>
-            <div class="card-body">
-                <div class="form-grid grid-3 mb-4">
-                    <div class="form-group">
-                        <label class="form-label font-weight-bold">Xưởng sản xuất nhận lệnh <span class="text-danger">*</span></label>
-                        <select name="maXuong" id="xuongSelect" class="input" required>
-                            <option value="">-- Chọn xưởng sản xuất --</option>
-                            <?php foreach ($xuongList as $x): ?>
-                                <option value="<?= htmlspecialchars($x['maXuong']) ?>" <?= ($formData['maXuong'] ?? '') === $x['maXuong'] ? 'selected' : '' ?>>
-                                    <?= htmlspecialchars($x['tenXuong']) ?> (Kho NVL phụ trách: <?= htmlspecialchars($x['tenKhoNVL']) ?>)
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                        <small class="text-muted mt-1 d-block">Có thể chia 1 kế hoạch cho nhiều xưởng khác nhau.</small>
-                    </div>
 
-                    <div class="form-group">
-                        <label class="form-label font-weight-bold">Ngày bắt đầu sản xuất <span class="text-danger">*</span></label>
-                        <input type="date" name="ngayBatDau" class="input" value="<?= htmlspecialchars($formData['ngayBatDau'] ?? date('Y-m-d')) ?>" required>
-                    </div>
+            <!-- Ngày bắt đầu sản xuất -->
+            <div class="form-group">
+                <label class="form-label font-weight-bold">
+                    Ngày bắt đầu sản xuất
+                    <span class="text-danger">*</span>
+                </label>
 
-                    <div class="form-group">
-                        <label class="form-label font-weight-bold">Ngày hoàn thành dự kiến <span class="text-danger">*</span></label>
-                        <input type="date" name="ngayHoanThanh" class="input" value="<?= htmlspecialchars($formData['ngayHoanThanh'] ?? date('Y-m-d', strtotime('+3 days'))) ?>" required>
-                    </div>
-                </div>
+                <input
+                    type="date"
+                    name="ngayBatDau"
+                    class="input"
+                    value="<?= htmlspecialchars(
+                        (string)($formData['ngayBatDau'] ?? date('Y-m-d')),
+                        ENT_QUOTES,
+                        'UTF-8'
+                    ) ?>"
+                    required
+                >
+            </div>
 
-                <div class="form-group mb-4">
-                    <label class="form-label">Ghi chú lệnh sản xuất</label>
-                    <input type="text" name="ghiChu" class="input" placeholder="Ghi chú thêm về quy cách đóng gói, ca kíp sản xuất..." value="<?= htmlspecialchars($formData['ghiChu'] ?? '') ?>">
-                </div>
+            <!-- Ngày hoàn thành dự kiến -->
+            <div class="form-group">
+                <label class="form-label font-weight-bold">
+                    Ngày hoàn thành dự kiến
+                    <span class="text-danger">*</span>
+                </label>
 
-                <h6 class="font-weight-bold mb-2">Nhập số lượng giao cho xưởng đợt này:</h6>
-                <p class="text-muted mb-3">Nhập số lượng lớn hơn 0 và không vượt quá số lượng còn lại của kế hoạch.</p>
-
-                <?php if ($planDetail && !empty($planDetail['items'])): ?>
-                    <div class="table-wrapper">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th style="width: 120px;">Mã SKU</th>
-                                    <th>Tên thành phẩm bánh kẹo</th>
-                                    <th>ĐVT</th>
-                                    <th class="text-right">Kế hoạch</th>
-                                    <th class="text-right">Đã giao</th>
-                                    <th class="text-right">Còn lại tối đa</th>
-                                    <th class="text-right" style="width: 180px;">Số lượng giao đợt này</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($planDetail['items'] as $item): ?>
-                                    <?php 
-                                        $sku = $item['maSKU'];
-                                        $remain = (float)$item['soLuongConLai'];
-                                        // Tìm giá trị cũ nếu có
-                                        $currentVal = '';
-                                        if (!empty($formData['items'])) {
-                                            foreach ($formData['items'] as $fItem) {
-                                                if ($fItem['maSKU'] === $sku) {
-                                                    $currentVal = $fItem['soLuongGiao'];
-                                                    break;
-                                                }
-                                            }
-                                        }
-                                        if ($currentVal === '' && $remain > 0) {
-                                            $currentVal = $remain; // mặc định đề xuất giao hết số còn lại
-                                        }
-                                    ?>
-                                    <tr>
-                                        <td><code><?= htmlspecialchars($sku) ?></code></td>
-                                        <td class="font-weight-bold col-text-long"><?= htmlspecialchars($item['tenHang']) ?></td>
-                                        <td><?= htmlspecialchars($item['donViTinh']) ?></td>
-                                        <td class="text-right"><?= formatSo($item['soLuongSanXuat']) ?></td>
-                                        <td class="text-right text-muted"><?= formatSo($item['soLuongDaGiaoLenh']) ?></td>
-                                        <td class="text-right font-weight-bold <?= $remain > 0 ? 'text-primary' : 'text-danger' ?>">
-                                            <?= formatSo($remain) ?>
-                                        </td>
-                                        <td class="text-right">
-                                            <?php if ($remain > 0): ?>
-                                                <input type="number" 
-                                                       name="items[<?= htmlspecialchars($sku) ?>]" 
-                                                       class="input text-right qty-input" 
-                                                       min="0" 
-                                                       max="<?= $remain ?>" 
-                                                       step="1" 
-                                                       value="<?= htmlspecialchars((string)$currentVal) ?>" 
-                                                       placeholder="0"
-                                                       data-max="<?= $remain ?>">
-                                            <?php else: ?>
-                                                <input type="text" class="input text-right bg-light" value="0" readonly>
-                                            <?php endif; ?>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div class="d-flex justify-content-between mt-4">
-                        <button type="button" class="btn btn-secondary" onclick="goToStep(1)">
-                            <i class="bi bi-arrow-left"></i> Quay lại Bước 1
-                        </button>
-                        <button type="button" class="btn btn-primary" onclick="submitCheckBOM()">
-                            <i class="bi bi-calculator"></i> Xác định nhu cầu nguyên liệu (BOM) <i class="bi bi-arrow-right"></i>
-                        </button>
-                    </div>
-                <?php else: ?>
-                    <div class="alert alert-warning">Vui lòng chọn Kế hoạch sản xuất ở Bước 1 trước.</div>
-                <?php endif; ?>
+                <input
+                    type="date"
+                    name="ngayHoanThanh"
+                    class="input"
+                    value="<?= htmlspecialchars(
+                        (string)($formData['ngayHoanThanh'] ?? date('Y-m-d', strtotime('+3 days'))),
+                        ENT_QUOTES,
+                        'UTF-8'
+                    ) ?>"
+                    required
+                >
             </div>
         </div>
+
+        <!-- Ghi chú lệnh sản xuất -->
+        <div class="form-group mb-4">
+            <label class="form-label">Ghi chú lệnh sản xuất</label>
+
+            <input
+                type="text"
+                name="ghiChu"
+                class="input"
+                placeholder="Ghi chú thêm về quy cách đóng gói, ca kíp sản xuất..."
+                value="<?= htmlspecialchars(
+                    (string)($formData['ghiChu'] ?? ''),
+                    ENT_QUOTES,
+                    'UTF-8'
+                ) ?>"
+            >
+        </div>
+
+        <h6 class="font-weight-bold mb-2">
+            Nhập số lượng giao cho xưởng đợt này:
+        </h6>
+
+        <p class="text-muted mb-3">
+            Nhập số lượng lớn hơn 0 và không vượt quá số lượng còn lại của kế hoạch.
+        </p>
+
+        <?php if ($hasPlanItems): ?>
+
+            <div class="table-wrapper">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th style="width: 120px;">Mã SKU</th>
+                            <th>Tên thành phẩm bánh kẹo</th>
+                            <th>ĐVT</th>
+                            <th class="text-right">Kế hoạch</th>
+                            <th class="text-right">Đã giao</th>
+                            <th class="text-right">Còn lại tối đa</th>
+                            <th class="text-right" style="width: 180px;">
+                                Số lượng giao đợt này
+                            </th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <?php foreach ($planDetail['items'] as $item): ?>
+                            <?php
+                                $sku = (string)($item['maSKU'] ?? '');
+                                $tenHang = (string)($item['tenHang'] ?? '');
+                                $donViTinh = (string)($item['donViTinh'] ?? '');
+
+                                $remain = max(
+                                    0,
+                                    (float)($item['soLuongConLai'] ?? 0)
+                                );
+
+                                $soLuongKeHoach = (float)($item['soLuongSanXuat'] ?? 0);
+                                $soLuongDaGiao = (float)($item['soLuongDaGiaoLenh'] ?? 0);
+
+                                // Tìm số lượng người dùng đã nhập trước đó.
+                                $currentVal = '';
+
+                                if (!empty($formData['items']) && is_array($formData['items'])) {
+                                    foreach ($formData['items'] as $fItem) {
+                                        if (
+                                            is_array($fItem)
+                                            && (string)($fItem['maSKU'] ?? '') === $sku
+                                        ) {
+                                            $currentVal = $fItem['soLuongGiao'] ?? '';
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                // Hỗ trợ trường hợp formData['items'] là mảng
+                                // có khóa trực tiếp bằng mã SKU.
+                                if (
+                                    $currentVal === ''
+                                    && isset($formData['items'][$sku])
+                                    && !is_array($formData['items'][$sku])
+                                ) {
+                                    $currentVal = $formData['items'][$sku];
+                                }
+
+                                // Mặc định đề xuất giao hết số lượng còn lại.
+                                if ($currentVal === '' && $remain > 0) {
+                                    $currentVal = $remain;
+                                }
+                            ?>
+
+                            <tr>
+                                <td>
+                                    <code><?= htmlspecialchars($sku, ENT_QUOTES, 'UTF-8') ?></code>
+                                </td>
+
+                                <td class="font-weight-bold col-text-long">
+                                    <?= htmlspecialchars($tenHang, ENT_QUOTES, 'UTF-8') ?>
+                                </td>
+
+                                <td>
+                                    <?= htmlspecialchars($donViTinh, ENT_QUOTES, 'UTF-8') ?>
+                                </td>
+
+                                <td class="text-right">
+                                    <?= formatSo($soLuongKeHoach) ?>
+                                </td>
+
+                                <td class="text-right text-muted">
+                                    <?= formatSo($soLuongDaGiao) ?>
+                                </td>
+
+                                <td class="text-right font-weight-bold <?= $remain > 0 ? 'text-primary' : 'text-danger' ?>">
+                                    <?= formatSo($remain) ?>
+                                </td>
+
+                                <td class="text-right">
+                                    <?php if ($remain > 0): ?>
+                                        <input
+                                            type="number"
+                                            name="items[<?= htmlspecialchars($sku, ENT_QUOTES, 'UTF-8') ?>]"
+                                            class="input text-right qty-input"
+                                            min="0"
+                                            max="<?= $remain ?>"
+                                            step="1"
+                                            value="<?= htmlspecialchars((string)$currentVal, ENT_QUOTES, 'UTF-8') ?>"
+                                            placeholder="0"
+                                            data-max="<?= $remain ?>"
+                                        >
+                                    <?php else: ?>
+                                        <input
+                                            type="text"
+                                            class="input text-right bg-light"
+                                            value="0"
+                                            readonly
+                                        >
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Nút chuyển bước -->
+            <div class="d-flex justify-content-between mt-4">
+                <button
+                    type="button"
+                    class="btn btn-secondary"
+                    onclick="goToStep(1)"
+                >
+                    <i class="bi bi-arrow-left"></i>
+                    Quay lại Bước 1
+                </button>
+
+                <button
+                    type="button"
+                    class="btn btn-primary"
+                    onclick="submitCheckBOM()"
+                >
+                    <i class="bi bi-calculator"></i>
+                    Xác định nhu cầu nguyên liệu (BOM)
+                    <i class="bi bi-arrow-right"></i>
+                </button>
+            </div>
+
+        <?php else: ?>
+            <div class="alert alert-warning">
+                Vui lòng chọn Kế hoạch sản xuất ở Bước 1 trước.
+            </div>
+        <?php endif; ?>
+
+    </div>
+</div>
+
 
         <!-- BƯỚC 3: ĐỐI CHIẾU NHU CẦU NGUYÊN VẬT LIỆU (BOM) -->
         <div class="card mb-4 wizard-step-panel" id="panelStep3" style="<?= $step !== 3 ? 'display: none;' : '' ?>">
@@ -445,6 +609,22 @@ function onPlanSelectChange(planId) {
 }
 
 function goToStep(stepNumber) {
+    var form = document.getElementById('orderForm');
+
+    // Chỉ cho phép phân bổ số lượng khi kế hoạch đã được chọn
+    // và chi tiết thành phẩm đã được tải từ máy chủ.
+    if (stepNumber >= 2 && form && form.dataset.planReady !== '1') {
+        alert('Vui lòng chọn kế hoạch sản xuất ở Bước 1 và chờ tải danh sách thành phẩm trước.');
+        var planPanel = document.getElementById('panelStep1');
+        if (planPanel) {
+            document.querySelectorAll('.wizard-step-panel').forEach(function(el) {
+                el.style.display = 'none';
+            });
+            planPanel.style.display = 'block';
+        }
+        return;
+    }
+
     document.querySelectorAll('.wizard-step-panel').forEach(function(el) {
         el.style.display = 'none';
     });

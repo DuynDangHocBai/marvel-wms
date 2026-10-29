@@ -261,7 +261,7 @@ class DieuPhoiRepository
         string $maNhanVienPhatLenh,
         string $maNhanVienThucHien,
         string $ghiChu = '',
-        ?int $maTaiKhoan = null
+        ?string $maTaiKhoan = null
     ): string {
         $wasInTransaction = $this->db->inTransaction();
         if (!$wasInTransaction) {
@@ -442,7 +442,7 @@ class DieuPhoiRepository
     /**
      * NVK xác nhận "Đã nhận lệnh"
      */
-    public function confirmReceiptByWorker(string $maLenhDieuPhoi, string $maNhanVien, ?int $maTaiKhoan = null): bool
+    public function confirmReceiptByWorker(string $maLenhDieuPhoi, string $maNhanVien, ?string $maTaiKhoan = null): bool
     {
         $sql = "UPDATE lenh_dieu_phoi_kho 
                 SET trangThai = 'DANG_THUC_HIEN' 
@@ -469,7 +469,7 @@ class DieuPhoiRepository
     /**
      * Ghi nhật ký hệ thống
      */
-    private function logActivity(?int $maTaiKhoan, string $hanhDong, string $moTa, ?array $cu = null, ?array $moi = null): void
+    private function logActivity(?string $maTaiKhoan, string $hanhDong, string $moTa, ?array $cu = null, ?array $moi = null): void
     {
         try {
             $sql = "INSERT INTO nhat_ky_he_thong 

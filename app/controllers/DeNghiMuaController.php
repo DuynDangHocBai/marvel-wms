@@ -145,6 +145,17 @@ class DeNghiMuaController extends Controller
             } catch (\Throwable $e) {
                 error_log("Lỗi khi lưu đề nghị mua: " . $e->getMessage());
                 Flash::error(Messages::DNM_EXC_SAVE_FAILED);
+                $this->render('de_nghi_mua/create', [
+                    'pageTitle'       => 'Lập đề nghị mua NVL mới',
+                    'approvedPlans'   => $approvedPlans,
+                    'allMaterials'    => $allMaterials,
+                    'selectedPlanId'  => $selectedPlanId,
+                    'planDetail'      => $planDetail,
+                    'calculatedItems' => $calculatedItems,
+                    'formData'        => $formData,
+                    'currentUser'     => $currentUser,
+                ]);
+                return;
             }
         }
 
