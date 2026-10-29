@@ -1,0 +1,32 @@
+# Configuration
+config/config.php
+
+# Storage & Logs
+storage/*
+!storage/.gitkeep
+*.log
+*.tmp
+
+# OS & IDE & Temp
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+.chrome_temp/
+
+# File quy trình làm việc với AI agent, không đưa lên repo
+docs/AGENT_RULES.md
+docs/PROMPTS.md
+docs/PROGRESS.md
+docs/BLOCKERS.md
+docs/CHANGES_NEEDED.md
+docs/SPEC_AUDIT.md
+docs/plans/
+docs/dac_ta_use_case.md
+docs/repomix_output.txt
+docs/repomix-output.txt
+implementation_plan.md
+task.md
+walkthrough.md
+docs/screenshots/*
+!docs/screenshots/e2e_*.png
